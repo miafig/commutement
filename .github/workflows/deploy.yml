@@ -20,6 +20,11 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
+      - name: Configure git identity
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
       - name: Build and deploy
         working-directory: ./frontend
         run: npm run deploy
