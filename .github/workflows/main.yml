@@ -1,0 +1,17 @@
+name: Building App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Building App
+      uses: mmedoo/build-react-on-push@v1.3
+      with:
+        TARGET_DIRECTORY: 'frontend'
+        APP_DIRECTORY: 'frontend'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
