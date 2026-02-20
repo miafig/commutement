@@ -1,22 +1,21 @@
-import json
 import os
+import json
+import logging
+import numpy as np
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import numpy as np
 
 from config import validate_config
 from data_processor import batch_commute_to_features, extract_predictions
-from model import (
-    train_model, load_checkpoint, save_checkpoint, list_checkpoints,
-    generate_optimal
-)
+from model import train_model, load_checkpoint, save_checkpoint, list_checkpoints, generate_optimal
+
 
 app = Flask(__name__)
 CORS(app)
 
-DATA_FILE = "commute_data.json"
-MODELS_DIR = "models"
+DATA_FILE = "backend/commute_data.json"
+MODELS_DIR = "backend/models"
 
 # Global model state
 model_state = {
@@ -340,7 +339,14 @@ def save_model():
 
 @app.route("/")
 def hello_world():
-    return "<p>hello</p>"
+    counts_in_data = len(load_data())
+    available_endpoints = ["/api/model/save", "/api/model/load", "/api/model/checkpoints", "/api/model/status", "/api/predict", "/api/train", "/api/commute", "/api/commutes", "/api/export/csv", "/api/health"]
+    main_page = f"""
+                <p>hello</p>
+                <p>Data entries: {counts_in_data}</p>
+                <p>Available API endpoints: {", ".join(available_endpoints)}</p>
+                """
+    return main_page
 
 if __name__ == "__main__":
     print(f"Data file: {os.path.abspath(DATA_FILE)}")
