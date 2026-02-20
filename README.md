@@ -12,7 +12,7 @@ a neural model for optimising daily commute for time and enjoyment
 ```bash
 cd backend
 pip install -r requirements.txt
-python server.py
+flask run
 ```
 
 **terminal 2 - frontend**
@@ -22,6 +22,14 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## deploy
+
+**backend**
+deployed at huggingface spaces: https://miafig-commutement.hf.space/
+
+**frontend**
+deployed at github pages: https://miafig.github.io/commutement/
 
 ## model architecture
 
@@ -40,8 +48,6 @@ Use a masked conditional autoencoder with TensorFlow:
 
 ## TODO
 
-- deploy app on github
-- start adding real data to dataset
 - improve and test the model
 - model /predict should not predict variables different from the ones given eg. if an input is Monday then it shouldn't predict Friday
 - split UI into 2 pages: data collection and inference
