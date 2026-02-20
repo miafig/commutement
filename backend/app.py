@@ -14,8 +14,8 @@ from model import train_model, load_checkpoint, save_checkpoint, list_checkpoint
 app = Flask(__name__)
 CORS(app)
 
-DATA_FILE = "backend/commute_data.json"
-MODELS_DIR = "backend/models"
+DATA_FILE = "data/commute_data.json"
+MODELS_DIR = "models"
 
 # Global model state
 model_state = {
