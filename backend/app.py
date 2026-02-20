@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from huggingface_hub import upload_file, hf_hub_download
 
 from config import validate_config
 from data_processor import batch_commute_to_features, extract_predictions
@@ -14,6 +15,7 @@ from model import train_model, load_checkpoint, save_checkpoint, list_checkpoint
 app = Flask(__name__)
 CORS(app)
 
+DATA_REPO = "miafig/commutement"
 DATA_FILE = "data/commute_data.json"
 MODELS_DIR = "models"
 
@@ -27,15 +29,22 @@ model_state = {
 
 def load_data():
     """Load existing data or return empty list"""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return []
+    download_path = hf_hub_download(
+        repo_id=DATA_REPO,
+        repo_type="dataset",
+        filename=DATA_FILE,
+        )
+    data = json.loads(open(download_path, "r").read())
+    return [] if not data else data
 
 def save_data(data):
     """Save data to JSON file"""
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    upload_file(
+        path_or_fileobj=DATA_FILE,
+        path_in_repo=DATA_FILE,
+        repo_id=DATA_REPO,
+        repo_type="dataset"
+        )
 
 @app.route("/api/commute", methods=["POST"])
 def save_commute():
