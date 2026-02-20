@@ -40,7 +40,7 @@ def load_data():
 def save_data(data):
     """Save data to JSON file"""
     upload_file(
-        path_or_fileobj=DATA_FILE,
+        path_or_fileobj=json.dumps(data, indent=True).encode(),
         path_in_repo=DATA_FILE,
         repo_id=DATA_REPO,
         repo_type="dataset"
