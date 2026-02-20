@@ -1,3 +1,12 @@
+---
+title: Commutement
+colorFrom: green
+colorTo: green
+sdk: docker
+pinned: false
+short_description: neural model for optimising commute for time and enjoyment
+---
+
 # commutement
 
 a neural model for optimising daily commute for time and enjoyment
@@ -26,10 +35,10 @@ npm run dev
 ## deploy
 
 **backend**
-deployed at huggingface spaces: https://miafig-commutement.hf.space/
+deployed at huggingface spaces: <https://miafig-commutement.hf.space/>
 
 **frontend**
-deployed at github pages: https://miafig.github.io/commutement/
+deployed at github pages: <https://miafig.github.io/commutement/>
 
 ## model architecture
 
