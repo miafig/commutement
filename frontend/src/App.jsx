@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import "./App.css";
 
+const apiUrl = "https://miafig-commutement.hf.space/api/";
+
 const initState = {
     dayOfWeek: "",
     going: "",
@@ -28,7 +30,7 @@ export default function App() {
 
   const fetchCount = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/commutes");
+      const res = await fetch(apiUrl + "commutes");
       const data = await res.json();
       setCount(data.count || 0);
     } catch (e) {
@@ -66,7 +68,7 @@ export default function App() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/commute", {
+      const res = await fetch(apiUrl + "commute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
