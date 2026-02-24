@@ -27,6 +27,8 @@ model_state = {
     "last_checkpoint": None
 }
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~record~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 def load_data():
     """Load existing data or return empty list"""
     download_path = hf_hub_download(
@@ -64,31 +66,8 @@ def get_commutes():
     data = load_data()
     return jsonify({"count": len(data), "commutes": data})
 
-@app.route("/api/export/csv", methods=["GET"])
-def export_csv():
-    """Export data as CSV"""
-    import csv
-    import io
 
-    data = load_data()
-    if not data:
-        return {"error": "No data"}, 404
-
-    output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=data[0].keys())
-    writer.writeheader()
-    writer.writerows(data)
-
-    return output.getvalue(), 200, {
-        "Content-Type": "text/csv",
-        "Content-Disposition": 'attachment; filename="commute_data.csv"'
-    }
-
-@app.route("/api/health", methods=["GET"])
-def get_health():
-    """Return health status"""
-    data = load_data()
-    return jsonify({"status": "healthy"})
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~get~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 @app.route("/api/train", methods=["POST"])
@@ -116,6 +95,7 @@ def train():
             return jsonify({"error": "Need at least 2 commute samples to train"}), 400
 
         # Validate and merge config
+        #TODO convert numeric params from strings if needed
         user_config = request.json or {}
         config = validate_config(user_config)
 
@@ -346,10 +326,16 @@ def save_model():
     except Exception as e:
         return jsonify({"error": f"Failed to save model: {str(e)}"}), 500
 
+@app.route("/api/health", methods=["GET"])
+def get_health():
+    """Return health status"""
+    data = load_data()
+    return jsonify({"status": "healthy"})
+
 @app.route("/")
 def hello_world():
     counts_in_data = len(load_data())
-    available_endpoints = ["/api/model/save", "/api/model/load", "/api/model/checkpoints", "/api/model/status", "/api/predict", "/api/train", "/api/commute", "/api/commutes", "/api/export/csv", "/api/health"]
+    available_endpoints = ["/api/health", "/api/commute", "/api/commutes"]
     main_page = f"""
                 <p>hello</p>
                 <p>Data entries: {counts_in_data}</p>

@@ -57,7 +57,6 @@ Use a masked conditional autoencoder with TensorFlow:
 
 ## TODO
 
+- fix train and inference APIs
 - improve and test the model
 - model /predict should not predict variables different from the ones given eg. if an input is Monday then it shouldn't predict Friday
-- split UI into 2 pages: data collection and inference
-- build UI page for inference
