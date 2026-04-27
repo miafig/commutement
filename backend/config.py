@@ -27,11 +27,16 @@ DEFAULT_CONFIG = {
 
 # Feature counts based on sandbox model
 NUM_FEATURES = {
-    "day_of_week": 7,      # One-hot encoded
+    "day_of_week": 7,       # One-hot encoded
     "start_time": 1,        # Normalized
     "end_time": 1,          # Normalized
-    "route": 3,             # One-hot encoded
-    "stops": 2,             # Multi-hot encoded
+    "route": 7,             # One-hot encoded
+    "sideQuests": 7,        # Multi-hot encoded
+    "disruptions": 4,       # Multi-hot encoded
+    "transport": 1,        # Binary
+    "going": 1,            # Binary
+    "company": 1,          # Binary
+    "rush": 1,             # Categorical (0, 1, 2)
 }
 
 TOTAL_FEATURES = sum(NUM_FEATURES.values())

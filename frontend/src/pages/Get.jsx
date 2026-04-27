@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const apiUrl = "https://miafig-commutement.hf.space/api/";
+const apiUrl = "http://127.0.0.1:5000/api/" // "https://miafig-commutement.hf.space/api/";
 
 const initPredState = {
   dayOfWeek: "",
@@ -10,7 +10,7 @@ const initPredState = {
   transport: "",
   route: "",
   sideQuests: [],
-  disruptions: "",
+  disruptions: [],
   company: "",
   rush: "",
   samples: 50,
@@ -21,6 +21,7 @@ const initPredState = {
 export default function App() {
   const [form, setForm] = useState(initPredState);
   const [status, setStatus] = useState("");
+  const [result, setResult] = useState(null);
   const [count, setCount] = useState(0);
 
   // Fetch entry count on load
@@ -40,26 +41,60 @@ export default function App() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    if (type === "checkbox") {
+      if (name === "sideQuest") {
+        const nextSideQuests = checked
+          ? [...(form.sideQuests || []), value]
+          : (form.sideQuests || []).filter((item) => item !== value);
+        setForm({ ...form, sideQuests: nextSideQuests });
+        return;
+      }
+
+      if (name === "disruption") {
+        const nextDisruptions = checked
+          ? [...(form.disruptions || []), value]
+          : (form.disruptions || []).filter((item) => item !== value);
+        setForm({ ...form, disruptions: nextDisruptions });
+        return;
+      }
+    }
+
     setForm({ ...form, [name]: value });
   };
 
   const handlePred = async (e) => {
     e.preventDefault();
-    console.log(formPred)
+    setStatus("");
+    setResult(null);
+
+    const payload = {
+      day: form.dayOfWeek,
+      startTime: form.departureTime,
+      known_features: {
+        route: form.route,
+      },
+      inference_params: {
+        n_samples: Number(form.samples),
+        time_weight: Number(form.timeWeight),
+        pleasure_weight: Number(form.pleasureWeight),
+      },
+    };
 
     try {
       const res = await fetch(apiUrl + "predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formPred),
+        body: JSON.stringify(payload),
       });
+      const data = await res.json();
 
       if (res.ok) {
         setStatus("✓ predicted");
-        setForm(initPredState);
+        setResult(data);
         setTimeout(() => setStatus(""), 6000);
       } else {
-        setStatus("error: failed to predict");
+        setStatus(`error: ${data.error || "failed to predict"}`);
       }
     } catch (e) {
       setStatus("error: connection failed");
@@ -211,6 +246,25 @@ export default function App() {
           </div>
 
           <button type="submit">predict</button>
+          {result && (
+            <div className="prediction-result">
+              <h2>prediction result</h2>
+              <p><strong>score:</strong> {result.best_score?.toFixed(3)}</p>
+              <p><strong>travel time:</strong> {result.predicted_travel_time}</p>
+              <p><strong>pleasure:</strong> {result.predicted_pleasure}</p>
+              <div className="recommendation">
+                <p><strong>day:</strong> {result.recommendation?.dayOfWeek}</p>
+                <p><strong>departure:</strong> {result.recommendation?.departureTime}</p>
+                <p><strong>arrival:</strong> {result.recommendation?.arrivalTime}</p>
+                <p><strong>transport:</strong> {result.recommendation?.transport}</p>
+                <p><strong>route:</strong> {result.recommendation?.route}</p>
+                <p><strong>side quests:</strong> {(result.recommendation?.sideQuests || []).join(", ") || "none"}</p>
+                <p><strong>disruptions:</strong> {(result.recommendation?.disruptions || []).join(", ") || "none"}</p>
+                <p><strong>company:</strong> {result.recommendation?.company}</p>
+                <p><strong>rush:</strong> {result.recommendation?.rush}</p>
+              </div>
+            </div>
+          )}
         </form>
     </div>
     </div>

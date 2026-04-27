@@ -18,6 +18,7 @@ CORS(app)
 DATA_REPO = "miafig/commutement"
 DATA_FILE = "data/commute_data.json"
 MODELS_DIR = "models"
+TEST = True
 
 # Global model state
 model_state = {
@@ -27,20 +28,51 @@ model_state = {
     "last_checkpoint": None
 }
 
+
+def load_latest_saved_model():
+    """Load the most recent checkpoint from disk, if available."""
+    checkpoints = list_checkpoints(MODELS_DIR)
+    if not checkpoints:
+        return None, None, None
+
+    latest = checkpoints[0]
+    model = load_checkpoint(latest["model_path"])
+    config = {}
+    if latest.get("config_exists") and latest.get("config_path"):
+        try:
+            with open(latest["config_path"], "r") as f:
+                config = json.load(f)
+        except Exception:
+            config = {}
+
+    return model, config, latest["model_path"]
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~record~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def load_data():
     """Load existing data or return empty list"""
-    download_path = hf_hub_download(
-        repo_id=DATA_REPO,
-        repo_type="dataset",
-        filename=DATA_FILE,
-        )
-    data = json.loads(open(download_path, "r").read())
+    if TEST:
+        data = json.loads(open(DATA_FILE, "r").read())
+        return data
+    try:
+        download_path = hf_hub_download(
+            repo_id=DATA_REPO,
+            repo_type="dataset",
+            filename=DATA_FILE,
+            )
+        data = json.loads(open(download_path, "r").read())
+    except Exception as e:
+        logging.error(f"Error loading data: {e}")
+        data = []
     return [] if not data else data
 
 def save_data(data):
     """Save data to JSON file"""
+    if TEST:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=True)
+        return
     upload_file(
         path_or_fileobj=json.dumps(data, indent=True).encode(),
         path_in_repo=DATA_FILE,
@@ -95,9 +127,9 @@ def train():
             return jsonify({"error": "Need at least 2 commute samples to train"}), 400
 
         # Validate and merge config
-        #TODO convert numeric params from strings if needed
         user_config = request.json or {}
         config = validate_config(user_config)
+        logging.debug(f"Training config: {config}")
 
         # Convert commute data to features
         X, mask = batch_commute_to_features(data)
@@ -180,7 +212,13 @@ def predict():
     """
     try:
         if model_state["model"] is None:
-            return jsonify({"error": "Model not trained yet. Call /api/train first."}), 400
+            model, config, checkpoint_path = load_latest_saved_model()
+            if model is None:
+                return jsonify({"error": "Model not trained yet. Call /api/train first."}), 400
+
+            model_state["model"] = model
+            model_state["config"] = config
+            model_state["last_checkpoint"] = checkpoint_path
 
         request_data = request.json or {}
 
@@ -207,7 +245,8 @@ def predict():
 
         # Merge inference params
         inference_params = request_data.get("inference_params", {})
-        config = model_state["config"].copy()
+        config = (model_state["config"] or {}).copy()
+        config.setdefault("inference_params", {})
         config["inference_params"].update(inference_params)
 
         # Generate prediction

@@ -21,7 +21,7 @@ a neural model for optimising daily commute for time and enjoyment
 ```bash
 cd backend
 pip install -r requirements.txt
-flask run
+flask --app server run
 ```
 
 **terminal 2 - frontend**
@@ -44,19 +44,21 @@ deployed at github pages: <https://miafig.github.io/commutement/>
 
 Use a masked conditional autoencoder with TensorFlow:
 
-- **Input**: [day_of_week_one_hot(7), start_time, end_time, route_one_hot(5), stops_multi_hot(5), ...]
-- **Mask**: 1=known, 0=unknown for each feature
+- **Input**: [day_of_week_one_hot(7), start_time(1), end_time(1), route_one_hot(7), sideQuests_multi_hot(7), ...]
+- **Mask**: 1 = known, 0 = unknown for each feature
+- **Encoder input**: concatenated [masked_features, mask]
 
 **Encoder**: Input → Dense(64, relu) → Dense(32, relu) → latent_dim
 
 **Decoder**: latent_dim → Dense(32, relu) → Dense(64, relu) → outputs:
 
 - features_out (reconstructed features)
-- time_out (predicted arrival time)
-- pleasure_out (subjective enjoyment, sigmoid)
+- travel_time_out (predicted travel time)
+- pleasure_out (predicted pleasure)
+
+The model uses a masked loss for feature reconstruction and predicts travel time and pleasure with linear output heads.
 
 ## TODO
 
-- fix train and inference APIs
 - improve and test the model
-- model /predict should not predict variables different from the ones given eg. if an input is Monday then it shouldn't predict Friday
+- add UI updates for train and inference

@@ -10,6 +10,23 @@ from typing import Tuple, List, Dict, Any
 from config import TOTAL_FEATURES
 
 
+@tf.keras.utils.register_keras_serializable(package="commutement")
+class MaskedFeatureLossLayer(layers.Layer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, inputs):
+        features_true, features_pred, mask = inputs
+        unknown_mask = 1.0 - mask
+        diff = (features_true - features_pred) * unknown_mask
+        squared = diff * diff
+        summed = tf.reduce_sum(squared, axis=-1)
+        masked_count = tf.reduce_sum(unknown_mask, axis=-1) + 1e-6
+        mse_per_sample = summed / masked_count
+        self.add_loss(tf.reduce_mean(mse_per_sample))
+        return features_pred
+
+
 def build_encoder(input_dim: int, latent_dim: int = 8) -> Model:
     """
     Build encoder model.
@@ -68,24 +85,19 @@ def build_model(config: Dict[str, Any]) -> Model:
     feature_input = layers.Input(shape=(TOTAL_FEATURES,), name='features')
     mask_input = layers.Input(shape=(TOTAL_FEATURES,), name='mask')
 
-    # Apply mask to features
     masked_features = layers.Multiply()([feature_input, mask_input])
     model_input = layers.Concatenate()([masked_features, mask_input])
 
-    # Build encoder and decoder
     encoder = build_encoder(model_input.shape[-1], latent_dim)
     decoder = build_decoder(latent_dim, TOTAL_FEATURES)
 
     z = encoder(model_input)
-
-    # Get decoder outputs and explicitly name them for proper loss dict matching
     decoder_outputs = decoder(z)
     features_hat = decoder_outputs[0]
     travel_time_hat = decoder_outputs[1]
     pleasure_hat = decoder_outputs[2]
 
-    # Rename outputs using Identity layers for proper model registration
-    features_hat = layers.Identity(name='features_out')(features_hat)
+    features_hat = MaskedFeatureLossLayer(name='features_out')([feature_input, features_hat, mask_input])
     travel_time_hat = layers.Identity(name='travel_time_out')(travel_time_hat)
     pleasure_hat = layers.Identity(name='pleasure_out')(pleasure_hat)
 
@@ -103,7 +115,7 @@ def build_model(config: Dict[str, Any]) -> Model:
             "pleasure_out": "mse"
         },
         loss_weights={
-            "features_out": loss_weights.get("features", 1.0),
+            "features_out": 0.0,
             "travel_time_out": loss_weights.get("travel_time", 1.0),
             "pleasure_out": loss_weights.get("pleasure", 0.5)
         }
@@ -186,6 +198,9 @@ def generate_optimal(
     for _ in range(n_samples):
         f_hat, t_hat, p_hat = model.predict([x, mask], verbose=0)
 
+        # Force known query features to remain fixed
+        f_hat = np.where(mask == 1, x, f_hat)
+
         score = (
             -time_weight * t_hat[0, 0] +
             pleasure_weight * p_hat[0, 0]
@@ -239,7 +254,11 @@ def load_checkpoint(model_path: str) -> Model:
     Returns:
         Loaded Keras model
     """
-    return tf.keras.models.load_model(model_path)
+    return tf.keras.models.load_model(
+        model_path,
+        custom_objects={"MaskedFeatureLossLayer": MaskedFeatureLossLayer},
+        compile=False
+    )
 
 
 def list_checkpoints(models_dir: str = "models") -> List[Dict[str, str]]:
