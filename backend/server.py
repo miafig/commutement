@@ -18,7 +18,7 @@ CORS(app)
 DATA_REPO = "miafig/commutement"
 DATA_FILE = "data/commute_data.json"
 MODELS_DIR = "models"
-TEST = True
+TEST = os.getenv("TEST") == "true"
 
 # Global model state
 model_state = {
